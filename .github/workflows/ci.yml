@@ -23,6 +23,7 @@ jobs:
         env:
           LLM_PROVIDER: demo
           DID_MOCK_MODE: "true"
+          KAFKA_ENABLED: "false"
         run: pytest -v
 
   frontend-build:
@@ -36,6 +37,6 @@ jobs:
         with:
           node-version: "20"
       - name: Install frontend dependencies
-        run: npm ci
+        run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
       - name: TypeScript & Next.js production build
         run: npm run build
