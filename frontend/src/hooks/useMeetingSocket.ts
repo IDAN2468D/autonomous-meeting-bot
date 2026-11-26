@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { WS_URL } from "@/lib/api";
+import { getWsUrl } from "@/lib/api";
 import {
   BotStatus,
   DraftReply,
@@ -36,7 +36,7 @@ export function useMeetingSocket(
     setError(null);
     setPendingDraft(null);
     setLastMetrics(null);
-    const ws = new WebSocket(`${WS_URL}/ws/meeting/${sessionId}`);
+    const ws = new WebSocket(`${getWsUrl()}/ws/meeting/${sessionId}`);
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
