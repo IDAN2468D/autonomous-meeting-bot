@@ -130,6 +130,27 @@ cd services/analytics-service && pytest -v
 
 ---
 
+## בדיקות API באמצעות `Postman` (`Collections`)
+
+תיקיית `postman/collections/` כוללת שני אוספי `Postman` עצמאיים ומלאים בעברית (`6` תיקיות, `31` בקשות API) עם `Collection Variables` מוטמעים (`aurameet_base_url`, `aurameet_ws_url`, `jwt_token`, `persona_id`, `session_id`, `template_id`, `meeting_id`) — **ללא צורך בקבצי `Environment` נפרדים**:
+
+- **`postman/collections/AuraMeet-AI-Docker-Localhost.postman_collection.json`** — לבדיקות מקומיות מול `Docker Compose` (`http://localhost:8088`).
+- **`postman/collections/AuraMeet-AI-Render-Production.postman_collection.json`** — לבדיקות מול הפריסה החיה ב-`Render` (`https://aurameet-gateway.onrender.com`).
+- **`postman/fixtures/`** — קבצי דוגמה לבדיקות העלאת אווטאר ומסמכי `RAG`.
+
+להרצת כל 31 הבקשות אוטומטית מהטרמינל (`Postman CLI`):
+```bash
+postman collection run postman/collections/AuraMeet-AI-Docker-Localhost.postman_collection.json
+```
+
+---
+
+## פריסה לענן (`Render Blueprint`)
+
+הפרויקט כולל קובץ `render.yaml` מוכן לפריסת כלל המיקרוסרוויסים, ה-`Frontend` וה-`API Gateway` ב-`Render` באמצעות Blueprint.
+
+---
+
 ## מבנה הפרויקט
 
 ```text
@@ -137,6 +158,7 @@ autonomous-meeting-bot/
 ├── .github/workflows/ci.yml            # GitHub Actions CI/CD (Matrix per Microservice + Frontend)
 ├── .env.example                        # תבנית משתני סביבה נקייה ללא סודות
 ├── docker-compose.yml                  # 10 קונטיינרים: 5 Microservices + Gateway + Frontend + Mongo + Kafka + Kafka UI
+├── render.yaml                         # Render Cloud Blueprint לפריסת כלל השירותים
 ├── gateway/
 │   └── nginx.conf                      # Nginx API Gateway (Path-based Microservice Routing, WS, Rate Limit)
 ├── shared/
@@ -148,6 +170,10 @@ autonomous-meeting-bot/
 │   ├── ai-service/                     # (:8004) Multi-LLM (Gemini/OpenAI/Demo), STT, Summary & Guardrails + pytest
 │   └── analytics-service/              # (:8005) Calendar Schedule, Summary Templates, Stats & Kafka Monitor + pytest
 ├── frontend/                           # (:3000) Next.js 15 RTL Hebrew UI
+├── postman/
+│   ├── collections/                    # אוספי Postman עצמאיים בעברית (Docker Localhost & Render Production)
+│   ├── fixtures/                       # קבצי דוגמה לבדיקות העלאת אווטאר ו-RAG
+│   └── README.md                       # מדריך ייבוא ושימוש ב-Postman
 └── docs/                               # מסמכי אפיון ותכנון (PRD, SPEC, PLAN, STATE)
 ```
 

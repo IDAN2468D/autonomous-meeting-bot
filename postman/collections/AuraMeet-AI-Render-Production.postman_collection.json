@@ -619,5 +619,17 @@
       "value": "",
       "type": "string"
     }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('aurameet_base_url')) pm.collectionVariables.set('aurameet_base_url', 'https://aurameet-gateway.onrender.com');",
+          "if (!pm.collectionVariables.get('aurameet_ws_url')) pm.collectionVariables.set('aurameet_ws_url', 'wss://aurameet-gateway.onrender.com');"
+        ]
+      }
+    }
   ]
 }
