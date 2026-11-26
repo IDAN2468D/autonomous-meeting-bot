@@ -3,19 +3,26 @@ import httpx
 from aurameet_shared.config import settings
 
 
+def _normalize_url(url: str) -> str:
+    cleaned = url.strip().rstrip("/")
+    if not cleaned.startswith(("http://", "https://")):
+        return f"http://{cleaned}"
+    return cleaned
+
+
 class ServiceClients:
     """Async HTTP client facade for inter-service calls to AI, Persona & Analytics services."""
 
     async def ai_health(self) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{settings.AI_SERVICE_URL.rstrip('/')}/health")
+            resp = await client.get(f"{_normalize_url(settings.AI_SERVICE_URL)}/health")
             resp.raise_for_status()
             return resp.json()
 
     async def ai_check_input(self, text: str, language: str = "he") -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(
-                f"{settings.AI_SERVICE_URL.rstrip('/')}/api/v1/ai/guardrails/check",
+                f"{_normalize_url(settings.AI_SERVICE_URL)}/api/v1/ai/guardrails/check",
                 json={"text": text, "language": language},
             )
             resp.raise_for_status()
@@ -24,7 +31,7 @@ class ServiceClients:
     async def ai_sanitize_output(self, text: str, max_chars: int = 420) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(
-                f"{settings.AI_SERVICE_URL.rstrip('/')}/api/v1/ai/guardrails/sanitize",
+                f"{_normalize_url(settings.AI_SERVICE_URL)}/api/v1/ai/guardrails/sanitize",
                 json={"text": text, "max_chars": max_chars},
             )
             resp.raise_for_status()
@@ -35,7 +42,7 @@ class ServiceClients:
     ) -> str:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(
-                f"{settings.AI_SERVICE_URL.rstrip('/')}/api/v1/ai/greet",
+                f"{_normalize_url(settings.AI_SERVICE_URL)}/api/v1/ai/greet",
                 json={
                     "persona_name": persona_name,
                     "role_title": role_title,
@@ -51,7 +58,7 @@ class ServiceClients:
     ) -> str:
         async with httpx.AsyncClient(timeout=45.0) as client:
             resp = await client.post(
-                f"{settings.AI_SERVICE_URL.rstrip('/')}/api/v1/ai/transcribe",
+                f"{_normalize_url(settings.AI_SERVICE_URL)}/api/v1/ai/transcribe",
                 json={
                     "audio_base64": audio_base64,
                     "mime_type": mime_type,
@@ -64,7 +71,7 @@ class ServiceClients:
     async def ai_generate_reply(self, payload: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         async with httpx.AsyncClient(timeout=45.0) as client:
             resp = await client.post(
-                f"{settings.AI_SERVICE_URL.rstrip('/')}/api/v1/ai/reply",
+                f"{_normalize_url(settings.AI_SERVICE_URL)}/api/v1/ai/reply",
                 json=payload,
             )
             resp.raise_for_status()
@@ -80,7 +87,7 @@ class ServiceClients:
     ) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=45.0) as client:
             resp = await client.post(
-                f"{settings.AI_SERVICE_URL.rstrip('/')}/api/v1/ai/summarize",
+                f"{_normalize_url(settings.AI_SERVICE_URL)}/api/v1/ai/summarize",
                 json={
                     "title": title,
                     "transcript": transcript,
@@ -95,7 +102,7 @@ class ServiceClients:
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
                 resp = await client.get(
-                    f"{settings.PERSONA_SERVICE_URL.rstrip('/')}/api/v1/personas/{persona_id}/context",
+                    f"{_normalize_url(settings.PERSONA_SERVICE_URL)}/api/v1/personas/{persona_id}/context",
                     params={"query": query},
                 )
                 resp.raise_for_status()
@@ -110,7 +117,7 @@ class ServiceClients:
             return 0
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(
-                f"{settings.PERSONA_SERVICE_URL.rstrip('/')}/api/v1/personas/{persona_id}/memories",
+                f"{_normalize_url(settings.PERSONA_SERVICE_URL)}/api/v1/personas/{persona_id}/memories",
                 json={
                     "session_id": session_id,
                     "meeting_title": meeting_title,
@@ -124,7 +131,7 @@ class ServiceClients:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.get(
-                    f"{settings.ANALYTICS_SERVICE_URL.rstrip('/')}/api/v1/templates/{template_id}"
+                    f"{_normalize_url(settings.ANALYTICS_SERVICE_URL)}/api/v1/templates/{template_id}"
                 )
                 resp.raise_for_status()
                 return resp.json()
