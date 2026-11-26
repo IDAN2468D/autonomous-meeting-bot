@@ -154,7 +154,13 @@ async def upload_persona_avatar(
 
     filename = file.filename or "avatar.png"
     ext = Path(filename).suffix.lower()
-    if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
+    mime_map = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+    }
+    if ext not in mime_map:
         raise HTTPException(
             status_code=400,
             detail="פורמט תמונה לא נתמך. ניתן להעלות JPG, PNG או WEBP בלבד.",
@@ -166,12 +172,16 @@ async def upload_persona_avatar(
     if len(raw) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="גודל התמונה חורג מ-5MB")
 
-    avatars_dir = Path(settings.UPLOADS_DIR) / "avatars"
-    avatars_dir.mkdir(parents=True, exist_ok=True)
     saved_name = f"persona_{persona_id}_{uuid.uuid4().hex[:8]}{ext}"
-    (avatars_dir / saved_name).write_bytes(raw)
-
-    url = f"{settings.PUBLIC_BASE_URL.rstrip('/')}/uploads/avatars/{saved_name}"
+    res = await db.avatars.insert_one(
+        {
+            "filename": saved_name,
+            "content_type": mime_map[ext],
+            "data": raw,
+            "created_at": datetime.now(timezone.utc),
+        }
+    )
+    url = f"/api/v1/auth/avatars/{res.inserted_id}"
     await db.personas.update_one(
         {"_id": ObjectId(persona_id)},
         {"$set": {"avatar_image_url": url}},

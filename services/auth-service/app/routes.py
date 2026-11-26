@@ -2,10 +2,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 import uuid
 from bson import ObjectId
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Response, UploadFile
 from aurameet_shared.config import settings
 from aurameet_shared.database import get_db
-from aurameet_shared.errors import BadRequestError, UnauthorizedError
+from aurameet_shared.errors import BadRequestError, NotFoundError, UnauthorizedError
 from aurameet_shared.kafka_client import (
     KafkaService,
     TOPIC_MEETING_ALERTS,
@@ -40,7 +40,12 @@ def _serialize_user(doc: dict) -> UserPublic:
     )
 
 
-ALLOWED_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
+ALLOWED_IMAGE_EXTS = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+}
 MAX_AVATAR_BYTES = 5 * 1024 * 1024
 
 
@@ -57,13 +62,18 @@ async def upload_avatar_image(file: UploadFile = File(...)) -> dict[str, str]:
     if len(raw) > MAX_AVATAR_BYTES:
         raise BadRequestError("גודל התמונה חורג מ-5MB")
 
-    avatars_dir = Path(settings.UPLOADS_DIR) / "avatars"
-    avatars_dir.mkdir(parents=True, exist_ok=True)
+    db = get_db()
     saved_name = f"{uuid.uuid4().hex}{ext}"
-    (avatars_dir / saved_name).write_bytes(raw)
-
-    base = settings.PUBLIC_BASE_URL.rstrip("/")
-    url = f"{base}/uploads/avatars/{saved_name}"
+    res = await db.avatars.insert_one(
+        {
+            "filename": saved_name,
+            "content_type": ALLOWED_IMAGE_EXTS[ext],
+            "data": raw,
+            "created_at": datetime.now(timezone.utc),
+        }
+    )
+    avatar_id = str(res.inserted_id)
+    url = f"/api/v1/auth/avatars/{avatar_id}"
     await kafka_service.publish(
         TOPIC_MEETING_AUTH,
         {
@@ -75,6 +85,21 @@ async def upload_avatar_image(file: UploadFile = File(...)) -> dict[str, str]:
         key=saved_name,
     )
     return {"avatar_image_url": url, "filename": saved_name}
+
+
+@router.get("/avatars/{avatar_id}")
+async def get_avatar_image(avatar_id: str) -> Response:
+    if not ObjectId.is_valid(avatar_id):
+        raise BadRequestError("Invalid avatar_id")
+    db = get_db()
+    doc = await db.avatars.find_one({"_id": ObjectId(avatar_id)})
+    if not doc or not doc.get("data"):
+        raise NotFoundError("Avatar image not found")
+    return Response(
+        content=bytes(doc["data"]),
+        media_type=doc.get("content_type", "image/jpeg"),
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 
 @router.post("/register", response_model=AuthResponse)
