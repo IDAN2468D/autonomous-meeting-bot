@@ -11,7 +11,44 @@ import {
   SummaryTemplate,
 } from "@/types/meeting";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8088";
+function resolveApiBase(): string {
+  if (typeof window !== "undefined") {
+    const { hostname, port } = window.location;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      if (port === "8088") return "";
+      return (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8088").replace(/\/$/, "");
+    }
+    if (hostname.includes("frontend")) {
+      const envUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
+      if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+        return envUrl;
+      }
+    }
+    // Behind API Gateway (e.g. aurameet-gateway.onrender.com or custom domain): same-origin!
+    return "";
+  }
+  return (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8088").replace(/\/$/, "");
+}
+
+export function getWsUrl(): string {
+  if (typeof window !== "undefined") {
+    const { protocol, host, hostname, port } = window.location;
+    const wsProto = protocol === "https:" ? "wss:" : "ws:";
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      if (port === "8088") return `ws://${host}`;
+      return (process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8088").replace(/\/$/, "");
+    }
+    if (hostname.includes("frontend")) {
+      const envWs = (process.env.NEXT_PUBLIC_WS_URL || "").trim().replace(/\/$/, "");
+      if (envWs && !envWs.includes("localhost") && !envWs.includes("127.0.0.1")) {
+        return envWs;
+      }
+    }
+    return `${wsProto}//${host}`;
+  }
+  return (process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8088").replace(/\/$/, "");
+}
+
 export const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8088";
 const TOKEN_KEY = "aurameet_jwt";
 
@@ -28,7 +65,8 @@ export function setAuthToken(token: string | null): void {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getAuthToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const base = resolveApiBase();
+  const res = await fetch(`${base}${path}`, {
     ...options,
     headers: {
       ...(options?.body instanceof FormData
