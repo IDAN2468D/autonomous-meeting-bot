@@ -61,11 +61,21 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"full_name\": \"Test User\",\n  \"email\": \"test.user@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
+              "raw": "{\n  \"full_name\": \"Test User\",\n  \"email\": \"{{test_email}}\",\n  \"password\": \"StrongPass123!\"\n}"
             },
             "url": "{{aurameet_base_url}}/api/v1/auth/register"
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const uniqueEmail = 'test.user.' + Date.now() + '@example.com';",
+                  "pm.collectionVariables.set('test_email', uniqueEmail);"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -95,7 +105,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test.user@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"StrongPass123!\"\n}"
             },
             "url": "{{aurameet_base_url}}/api/v1/auth/login"
           },
@@ -149,7 +159,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": ""
+                  "src": "postman/fixtures/sample-avatar.png"
                 }
               ]
             },
@@ -206,8 +216,13 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "pm.test('Persona created (200)', function () { pm.response.to.have.status(200); });",
                   "if (pm.response.code === 200) {",
-                  "  pm.collectionVariables.set('persona_id', pm.response.json().id);",
+                  "  const id = pm.response.json().id;",
+                  "  pm.collectionVariables.set('temp_persona_id', id);",
+                  "  if (!pm.collectionVariables.get('persona_id')) {",
+                  "    pm.collectionVariables.set('persona_id', id);",
+                  "  }",
                   "}"
                 ]
               }
@@ -219,7 +234,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{aurameet_base_url}}/api/v1/personas/{{persona_id}}"
+            "url": "{{aurameet_base_url}}/api/v1/personas/{{temp_persona_id}}"
           }
         },
         {
@@ -233,11 +248,11 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": ""
+                  "src": "postman/fixtures/sample-knowledge.txt"
                 }
               ]
             },
-            "url": "{{aurameet_base_url}}/api/v1/personas/{{persona_id}}/knowledge"
+            "url": "{{aurameet_base_url}}/api/v1/personas/{{temp_persona_id}}/knowledge"
           }
         },
         {
@@ -245,7 +260,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{aurameet_base_url}}/api/v1/personas/{{persona_id}}/memories"
+            "url": "{{aurameet_base_url}}/api/v1/personas/{{temp_persona_id}}/memories"
           }
         },
         {
@@ -254,7 +269,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{aurameet_base_url}}/api/v1/personas/{{persona_id}}/context?query=סטטוס",
+              "raw": "{{aurameet_base_url}}/api/v1/personas/{{temp_persona_id}}/context?query=סטטוס",
               "host": [
                 "{{aurameet_base_url}}"
               ],
@@ -262,7 +277,7 @@
                 "api",
                 "v1",
                 "personas",
-                "{{persona_id}}",
+                "{{temp_persona_id}}",
                 "context"
               ],
               "query": [
@@ -279,7 +294,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{aurameet_base_url}}/api/v1/personas/{{persona_id}}"
+            "url": "{{aurameet_base_url}}/api/v1/personas/{{temp_persona_id}}"
           }
         }
       ]
@@ -616,6 +631,16 @@
     },
     {
       "key": "meeting_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_email",
+      "value": "test.user@example.com",
+      "type": "string"
+    },
+    {
+      "key": "temp_persona_id",
       "value": "",
       "type": "string"
     }
