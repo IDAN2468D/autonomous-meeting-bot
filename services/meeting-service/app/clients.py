@@ -6,6 +6,8 @@ from aurameet_shared.config import settings
 def _normalize_url(url: str) -> str:
     cleaned = url.strip().rstrip("/")
     if not cleaned.startswith(("http://", "https://")):
+        if cleaned.endswith(".onrender.com"):
+            return f"https://{cleaned}"
         return f"http://{cleaned}"
     return cleaned
 
