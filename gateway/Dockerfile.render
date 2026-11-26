@@ -1,0 +1,6 @@
+FROM nginx:1.27-alpine
+
+ENV PORT=8088
+COPY gateway/nginx.render.conf.template /etc/nginx/templates/default.conf.template
+
+EXPOSE 8088

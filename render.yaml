@@ -1,0 +1,187 @@
+envVarGroups:
+  - name: aurameet-shared-env
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: meeting_bot_db
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRE_MINUTES
+        value: "1440"
+      - key: AUTH_REQUIRED
+        value: "false"
+      - key: KAFKA_ENABLED
+        value: "false"
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+
+services:
+  - type: pserv
+    name: aurameet-auth-service
+    runtime: docker
+    dockerfilePath: ./services/auth-service/Dockerfile
+    dockerContext: .
+    plan: starter
+    envVars:
+      - fromGroup: aurameet-shared-env
+      - key: SERVICE_NAME
+        value: auth-service
+      - key: PORT
+        value: "8001"
+      - key: UPLOADS_DIR
+        value: /tmp/uploads
+
+  - type: pserv
+    name: aurameet-persona-service
+    runtime: docker
+    dockerfilePath: ./services/persona-service/Dockerfile
+    dockerContext: .
+    plan: starter
+    envVars:
+      - fromGroup: aurameet-shared-env
+      - key: SERVICE_NAME
+        value: persona-service
+      - key: PORT
+        value: "8002"
+      - key: CHROMA_PERSIST_DIR
+        value: /tmp/chroma_data
+      - key: UPLOADS_DIR
+        value: /tmp/uploads
+
+  - type: pserv
+    name: aurameet-ai-service
+    runtime: docker
+    dockerfilePath: ./services/ai-service/Dockerfile
+    dockerContext: .
+    plan: starter
+    envVars:
+      - fromGroup: aurameet-shared-env
+      - key: SERVICE_NAME
+        value: ai-service
+      - key: PORT
+        value: "8004"
+      - key: LLM_PROVIDER
+        value: auto
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+
+  - type: pserv
+    name: aurameet-analytics-service
+    runtime: docker
+    dockerfilePath: ./services/analytics-service/Dockerfile
+    dockerContext: .
+    plan: starter
+    envVars:
+      - fromGroup: aurameet-shared-env
+      - key: SERVICE_NAME
+        value: analytics-service
+      - key: PORT
+        value: "8005"
+
+  - type: pserv
+    name: aurameet-meeting-service
+    runtime: docker
+    dockerfilePath: ./services/meeting-service/Dockerfile
+    dockerContext: .
+    plan: starter
+    envVars:
+      - fromGroup: aurameet-shared-env
+      - key: SERVICE_NAME
+        value: meeting-service
+      - key: PORT
+        value: "8003"
+      - key: AVATAR_PROVIDER
+        value: simli
+      - key: SIMLI_API_KEY
+        sync: false
+      - key: SIMLI_FACE_ID
+        value: tmp9i8bbq7c
+      - key: DID_API_KEY
+        sync: false
+      - key: DID_MOCK_MODE
+        value: "false"
+      - key: AI_SERVICE_URL
+        fromService:
+          type: pserv
+          name: aurameet-ai-service
+          property: hostport
+      - key: PERSONA_SERVICE_URL
+        fromService:
+          type: pserv
+          name: aurameet-persona-service
+          property: hostport
+      - key: ANALYTICS_SERVICE_URL
+        fromService:
+          type: pserv
+          name: aurameet-analytics-service
+          property: hostport
+
+  - type: pserv
+    name: aurameet-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: starter
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_WS_URL
+        sync: false
+
+  - type: web
+    name: aurameet-gateway
+    runtime: docker
+    dockerfilePath: ./gateway/Dockerfile.render
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8088"
+      - key: AUTH_HOSTPORT
+        fromService:
+          type: pserv
+          name: aurameet-auth-service
+          property: hostport
+      - key: PERSONA_HOSTPORT
+        fromService:
+          type: pserv
+          name: aurameet-persona-service
+          property: hostport
+      - key: MEETING_HOSTPORT
+        fromService:
+          type: pserv
+          name: aurameet-meeting-service
+          property: hostport
+      - key: AI_HOSTPORT
+        fromService:
+          type: pserv
+          name: aurameet-ai-service
+          property: hostport
+      - key: ANALYTICS_HOSTPORT
+        fromService:
+          type: pserv
+          name: aurameet-analytics-service
+          property: hostport
+      - key: FRONTEND_HOSTPORT
+        fromService:
+          type: pserv
+          name: aurameet-frontend
+          property: hostport
