@@ -1,102 +1,132 @@
-# AuraMeet AI — Autonomous Meeting Bot
+<div dir="rtl" align="right">
+
+# AuraMeet AI — Autonomous Meeting Bot (Microservices Architecture)
+
+[![CI — AuraMeet AI Microservices](https://github.com/IDAN2468D/autonomous-meeting-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/IDAN2468D/autonomous-meeting-bot/actions/workflows/ci.yml)
+![Architecture](https://img.shields.io/badge/Architecture-Microservices-6366f1?style=flat-square)
+![FastAPI](https://img.shields.io/badge/FastAPI-Async%20Python%203.11-009688?style=flat-square)
+![Next.js](https://img.shields.io/badge/Next.js-15%20TypeScript-000000?style=flat-square)
+![Kafka](https://img.shields.io/badge/Apache%20Kafka-KRaft%203.8-231f20?style=flat-square)
+![Docker](https://img.shields.io/badge/Docker%20Compose-10%20Services-2496ed?style=flat-square)
 
 > **פרויקט 2 מתוך מסלול Back End AI: Hi-Tech Gateway**  
-> בוט פגישות אישי ואוטונומי המייצג את המשתמש בפגישות וידאו חיות, משלב **FastAPI Async**, **Nginx API Gateway**, **Apache Kafka + Kafka UI**, **Multi-LLM (`gemini-3.5-flash-lite` / OpenAI / Demo)**, **ChromaDB RAG**, **זיכרון ארוך-טווח**, **Guardrails**, **Human-in-the-Loop (HITL)**, **אבטחת JWT** ו-**Real-Time WebRTC Avatar Streaming (Simli / D-ID)**.
+> מערכת **בוט פגישות אישי ואוטונומי** בארכיטקטורת **Microservices** מלאה — המייצגת את המשתמש בפגישות וידאו חיות עם אווטאר בזמן אמת (`WebRTC`), מנוע `Multi-LLM` (`Gemini 3.5 Flash Lite` / `OpenAI` / `Demo`), בסיס ידע אישי (`ChromaDB RAG`), זיכרון ארוך-טווח, `Guardrails`, בקרת `Human-in-the-Loop (HITL)`, הזרמת אירועים ב-`Apache Kafka` ו-`Nginx API Gateway`.
 
 ---
 
-## ארכיטקטורת המערכת
+## ארכיטקטורת המיקרוסרוויסים
 
 ```mermaid
-flowchart LR
-    User["דפדפן המשתמש (RTL Hebrew UI)"] --> GW["Nginx API Gateway (:8088)"]
-    GW --> FE["Next.js 15 Frontend (:3000)"]
-    GW --> BE["FastAPI Async Backend (:8000)"]
-    BE --> Mongo["MongoDB (:27017)\nUsers, Personas, Sessions,\nMemories, Schedule"]
-    BE --> Chroma["ChromaDB Vector Store\nPersonal RAG Knowledge"]
-    BE --> Kafka["Apache Kafka KRaft (:9092)\n6 Event Topics"]
-    Kafka --> KUI["Kafka UI (:8080)"]
-    BE --> LLM["LLM Engine\nGemini 3.5 Flash Lite / OpenAI"]
-    BE --> Avatar["WebRTC Avatar\nSimli / D-ID / Mock"]
+flowchart TB
+    User["דפדפן המשתמש (RTL Hebrew UI)"] --> GW["Nginx API Gateway (:8088)\nRate Limit · Routing · WS Proxy"]
+
+    GW --> FE["Frontend\nNext.js 15 (:3000)"]
+    GW --> AUTH["auth-service (:8001)\nJWT Auth · Profiles · Avatars"]
+    GW --> PERSONA["persona-service (:8002)\nPersonas · ChromaDB RAG · Memory"]
+    GW --> MEETING["meeting-service (:8003)\nLive Sessions · WebSocket · WebRTC"]
+    GW --> AI["ai-service (:8004)\nMulti-LLM · STT · Guardrails"]
+    GW --> ANALYTICS["analytics-service (:8005)\nSchedule · Templates · Stats · Kafka"]
+
+    MEETING -. "HTTP Internal API" .-> AI
+    MEETING -. "HTTP Internal API" .-> PERSONA
+    MEETING -. "HTTP Internal API" .-> ANALYTICS
+
+    AUTH --> MONGO[("MongoDB 7 (:27017)")]
+    PERSONA --> MONGO
+    PERSONA --> CHROMA[("ChromaDB Vector Store")]
+    MEETING --> MONGO
+    ANALYTICS --> MONGO
+
+    AUTH --> KAFKA["Apache Kafka KRaft (:9092)\n6 Event Topics"]
+    PERSONA --> KAFKA
+    MEETING --> KAFKA
+    ANALYTICS <--> KAFKA
+    KAFKA --> KUI["Kafka UI (:8080)"]
 ```
 
 ---
 
-## יכולות מרכזיות
+## פירוט השירותים (`Services Catalog`)
 
-### 1. אבטחת צד שרת וניהול משתמשים (`JWT` + העלאת אווטאר מהמחשב)
-- **מסכי כניסה ייעודיים**: פתיחת האפליקציה מנתבת אוטומטית למסך `/login` (עם קישור ל-`/register`), ללא כפתור התחברות בסרגל הצדדי.
-- **העלאת תמונת אווטאר מהמחשב**: בחירת קובץ (`JPG` / `PNG` / `WEBP`) בהרשמה עם אייקון אווטאר ברירת מחדל ותצוגה מקדימה מיידית (`POST /api/v1/auth/avatar/upload`), והורשה אוטומטית ביצירת פרסונה חדשה + אפשרות להחליף תמונה ישירות מכרטיס **פרסונה פעילה** (`POST /api/v1/personas/{id}/avatar`).
-- **אבטחת JWT מלאה**: הצפנת סיסמאות `PBKDF2-HMAC-SHA256`, טוקן `JWT HS256` (`POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, `PATCH /api/v1/auth/me`) וכפתור הצגת/הסתרת סיסמה (`Eye / EyeOff`).
+המערכת מופרדת ל-**5 מיקרוסרוויסים עצמאיים** + חבילת תשתית משותפת (`shared/aurameet_shared`) + `Nginx API Gateway` + `Frontend`:
 
-### 2. סוכן AI אוטונומי בחדר פגישה חי (`WebSocket` + `WebRTC`)
-- **מנוע `Multi-LLM` נעול ל-`gemini-3.5-flash-lite`** (עם ניסיונות חוזרים אוטומטיים על `503`/`429`), תמיכה גמישה ב-`OpenAI (GPT + Whisper)` ומצב `Demo`, שליטה ב-`Temperature`, `MaxTokens`, `Top P` ומדידת טוקנים.
-- **בסיס ידע אישי (`RAG`)**: העלאת קובצי `PDF / TXT / MD` לכל פרסונה ואינדוקס וקטורי ב-`ChromaDB`.
-- **זיכרון קצר וארוך-טווח**: שמירת עובדות מפתח (`key_facts`) ב-`MongoDB` בסיום פגישה ושליפתן אוטומטית לפגישות הבאות (`GET /api/v1/personas/{id}/memories`).
-- **`Guardrails`**: חסימת `Prompt Injection`, הסתרת מפתחות/מידע רגיש וניקוי `Markdown` לפני דיבור האווטאר.
-- **`Human-In-The-Loop (HITL)` + פתיחה אוטונומית**: כפתור פתיחת פגישה אוטונומית ומצב אישור/עריכה ידנית לפני שהאווטאר מדבר, לצד מדדי זמן אמת (`STT / RAG / LLM / TTS ms` וטוקנים).
-- **לוח שנה, תזמון ותבניות סיכום**: ניהול פגישות מתוזמנות, הפקת סיכומי פגישה ו-`Action Items` לפי תבניות מובנות ומותאמות אישית.
+| שירות | פורט | נתיבים ב-Gateway | אחריות מרכזית |
+| :--- | :---: | :--- | :--- |
+| **`auth-service`** | `8001` | `/api/v1/auth/*`, `/uploads/*` | הרשמה והתחברות עם `JWT HS256`, הצפנת `PBKDF2-HMAC-SHA256`, ניהול פרופיל והעלאת תמונות אווטאר |
+| **`persona-service`** | `8002` | `/api/v1/personas/*` | ניהול פרסונות, אינדוקס מסמכי `PDF / TXT / MD` ב-`ChromaDB (RAG)` וזיכרון ארוך-טווח ב-`MongoDB` |
+| **`meeting-service`** | `8003` | `/api/v1/sessions/*`, `/ws/meeting/*` | ניהול חדרי פגישה חיים, `WebSocket` בזמן אמת, `HITL`, וזרם אווטאר `WebRTC` (`Simli` / `D-ID` / `Mock`) |
+| **`ai-service`** | `8004` | `/api/v1/ai/*` | מנוע `Multi-LLM` (`Gemini 3.5 Flash Lite` / `OpenAI` / `Demo`), תמלול אודיו (`STT`), סיכומי פגישות ו-`Guardrails` |
+| **`analytics-service`** | `8005` | `/api/v1/templates`, `/api/v1/schedule`, `/api/v1/stats`, `/api/v1/kafka/*` | תבניות סיכום, לוח שנה ותזמון פגישות, סטטיסטיקות דשבורד וצריכת/ניטור אירועי `Kafka` |
+| **`gateway`** | `8088` | `/` (כניסה ראשית) | `Nginx API Gateway` — ניתוב אחיד לכל השירותים, `Rate Limiting`, תמיכת `WebSocket` וכותרות אבטחה |
+| **`frontend`** | `3000` | `/` | ממשק `Next.js 15` מלא בעברית (`RTL`), מסכי `/login` ו-`/register`, חדר פגישה חי ולוח בקרה |
 
-### 3. ארכיטקטורה מונחית-אירועים (`Apache Kafka` + `Kafka UI`)
-המערכת מפרסמת וצורכת אירועים בזמן אמת ב-6 טופיקים מסודרים (נוצרים אוטומטית בהפעלה):
+---
 
-| טופיק (`Topic`) | תיאור האירועים |
-| :--- | :--- |
-| `meeting.events` | פתיחת/סיום פגישות, יצירת ומחיקת תבניות, עליית שירות |
-| `meeting.schedule` | תזמון פגישות חדשות בלוח השנה וביטול פגישות מתוזמנות |
-| `meeting.transcripts` | חילופי דברים בזמן אמת, פתיחה אוטונומית ומדדי ביצועים |
-| `meeting.personas` | יצירה/מחיקה של פרסונות, עדכון תמונת אווטאר, אינדוקס RAG וזיכרון ארוך-טווח |
-| `meeting.auth` | הרשמת משתמשים, התחברות, עדכון פרופיל והעלאת אווטאר |
-| `meeting.alerts` | התראות לוח שנה, הפעלת `Guardrails`, אישורי `HITL`, ניסיונות התחברות כושלים ושגיאות WebSocket |
+## ארכיטקטורה מונחית-אירועים (`Apache Kafka`)
 
-### 4. `Nginx API Gateway` וניהול שגיאות מרכזי
-- **נקודת כניסה אחת (`http://localhost:8088`)**: ניתוב מאוחד ל-`Frontend`, `REST API`, `WebSockets`, קבצים מועלים (`/uploads/`) ו-`Swagger`, כולל `Rate Limiting` וכותרות אבטחה.
-- **`Centralized Error Manager`**: החזרת שגיאות מובנות ואחידות (`code`, `message`, `details`, `request_id`, `timestamp`).
+כל מיקרוסרוויס מפרסם אירועי דומיין ל-`Kafka`, בעוד `analytics-service` משמש כ-`Consumer` מרכזי לניטור ובקרה בזמן אמת (ניתן לצפות בהכל ב-`Kafka UI` בפורט `8080`):
+
+| טופיק (`Topic`) | מפרסמים (`Producers`) | תיאור האירועים |
+| :--- | :--- | :--- |
+| `meeting.auth` | `auth-service` | הרשמה, התחברות, עדכון פרופיל והעלאת תמונת אווטאר |
+| `meeting.personas` | `persona-service` | יצירה/מחיקה של פרסונות, אינדוקס `RAG` ושמירת זיכרון ארוך-טווח |
+| `meeting.events` | `meeting-service`, `analytics-service` | פתיחת/סיום פגישות, יצירת/מחיקת תבניות סיכום ועליית שירותים |
+| `meeting.transcripts` | `meeting-service` | חילופי דברים בזמן אמת, פתיחה אוטונומית ומדדי ביצועים (`STT/RAG/LLM/TTS`) |
+| `meeting.schedule` | `analytics-service` | תזמון פגישות חדשות וביטול פגישות בלוח השנה |
+| `meeting.alerts` | `auth-service`, `meeting-service`, `analytics-service` | חסימות `Guardrails`, בקשות `HITL`, התחברות כושלת והתראות לוח שנה |
 
 ---
 
 ## הרצה מהירה עם Docker Compose
 
-### 1. הגדרת משתני סביבה (ללא שמירת מפתחות ב-Git)
-העתק את קובץ הדוגמה והזן את המפתחות שלך מקומית (הקובץ `backend/.env` חסום ב-`.gitignore` ולא עולה ל-GitHub):
+### 1. הגדרת משתני סביבה (ללא שמירת סודות ב-Git)
+העתק את קובץ התבנית והזן את המפתחות שלך מקומית (`.env` חסום ב-`.gitignore`):
 
 ```bash
-cp backend/.env.example backend/.env
+cp .env.example .env
 ```
 
-המשתנים העיקריים ב-`backend/.env`:
+המשתנים העיקריים ב-`.env`:
 - `GEMINI_API_KEY` — מפתח Google Gemini API (מודל ברירת מחדל: `gemini-3.5-flash-lite`)
-- `SIMLI_API_KEY` / `SIMLI_FACE_ID` — אווטאר WebRTC חי (או `DID_API_KEY` / `DID_MOCK_MODE=true`)
-- `JWT_SECRET_KEY` — מפתח סודי לחתימת טוקני JWT
+- `SIMLI_API_KEY` / `SIMLI_FACE_ID` — אווטאר `WebRTC` חי (או `DID_API_KEY` / `DID_MOCK_MODE=true`)
+- `JWT_SECRET_KEY` — מפתח סודי לחתימת טוקני `JWT`
 
-### 2. הפעלת כל 6 הקונטיינרים
+### 2. הפעלת כל 10 הקונטיינרים
 ```bash
 docker compose up -d --build
 ```
 
 ### כתובות השירותים הפעילים
 
-| שירות | כתובת | תפקיד |
+| שירות | כתובת | תיאור |
 | :--- | :--- | :--- |
-| **API Gateway (כניסה ראשית)** | `http://localhost:8088` | נקודת הכניסה הראשית לאפליקציה ול-API |
-| **Swagger API Docs** | `http://localhost:8088/docs` | תיעוד OpenAPI אינטראקטיבי |
+| **API Gateway (כניסה ראשית)** | `http://localhost:8088` | נקודת הכניסה הראשית לאפליקציה ולכל ה-APIs |
 | **Kafka UI** | `http://localhost:8080` | ניטור חי של הטופיקים, ההודעות וה-Consumers |
-| **Backend Direct** | `http://localhost:8000/health` | בדיקת תקינות השרת וסטטוס Kafka/LLM |
-| **Frontend Direct** | `http://localhost:3000` | ממשק Next.js ישיר |
+| **Auth Service Docs** | `http://localhost:8001/docs` | תיעוד Swagger של `auth-service` |
+| **Persona Service Docs** | `http://localhost:8002/docs` | תיעוד Swagger של `persona-service` |
+| **Meeting Service Docs** | `http://localhost:8003/docs` | תיעוד Swagger של `meeting-service` |
+| **AI Service Docs** | `http://localhost:8004/docs` | תיעוד Swagger של `ai-service` |
+| **Analytics Service Docs** | `http://localhost:8005/docs` | תיעוד Swagger של `analytics-service` |
 
 ---
 
-## בדיקות ו-CI/CD
+## בדיקות אוטומטיות ו-CI/CD
 
-### הרצת בדיקות Backend (`pytest`)
+לכל מיקרוסרוויס יש חבילת בדיקות עצמאית (`pytest`) שניתן להריץ בנפרד או דרך `GitHub Actions`:
+
 ```bash
-docker exec meeting-bot-backend pytest -v
+# הרצת בדיקות לכל שירות בנפרד
+cd services/auth-service && pytest -v
+cd services/persona-service && pytest -v
+cd services/meeting-service && pytest -v
+cd services/ai-service && pytest -v
+cd services/analytics-service && pytest -v
 ```
 
-### צינור GitHub Actions
-הפרויקט כולל צינור CI אוטומטי בקובץ `.github/workflows/ci.yml` המריץ בכל `push` / `pull_request`:
-1. התקנת תלויות והרצת חבילת `pytest` מלאה (במצב `demo` ו-`mock`).
-2. בניית `Next.js` ובדיקת TypeScript (`npm run build`).
+### צינור `GitHub Actions` (`.github/workflows/ci.yml`)
+בכל `push` ו-`pull_request`, ה-CI מריץ במקביל:
+1. **מטריצת בדיקות (`microservice-tests`)** — הרצת `pytest -v` לכל 5 המיקרוסרוויסים (במצב `demo` + `mock`).
+2. **בניית Frontend (`frontend-build`)** — בדיקת `TypeScript` ובניית `Next.js` (`npm run build`).
 
 ---
 
@@ -104,21 +134,21 @@ docker exec meeting-bot-backend pytest -v
 
 ```text
 autonomous-meeting-bot/
-├── .github/workflows/ci.yml     # GitHub Actions CI/CD
-├── gateway/nginx.conf           # Nginx API Gateway (Rate Limit, WS, Proxy)
-├── docker-compose.yml           # MongoDB, Kafka, Kafka UI, Backend, Frontend, Gateway
-├── backend/
-│   ├── app/
-│   │   ├── api/                 # routes_auth, routes_personas, routes_sessions, routes_features, ws_meeting
-│   │   ├── core/                # config, database, security (JWT), errors (Centralized Error Manager)
-│   │   ├── models/              # Pydantic v2 schemas
-│   │   └── services/            # llm_service, rag_service, memory_service, guardrails_service, kafka_service, simli_service, did_service
-│   ├── tests/test_api.py        # Unit & Integration Tests
-│   └── .env.example             # Safe template without secrets
-└── frontend/
-    └── src/
-        ├── app/                 # / (Auth-guarded Dashboard), /login, /register
-        ├── components/          # AvatarStage, PersonaManager, CalendarScheduler, DashboardPanel, TranscriptPanel, ...
-        ├── hooks/               # useMeetingSocket, useWebRTC, useAudioRecorder
-        └── lib/api.ts           # Typed API Client with JWT Bearer support
+├── .github/workflows/ci.yml            # GitHub Actions CI/CD (Matrix per Microservice + Frontend)
+├── .env.example                        # תבנית משתני סביבה נקייה ללא סודות
+├── docker-compose.yml                  # 10 קונטיינרים: 5 Microservices + Gateway + Frontend + Mongo + Kafka + Kafka UI
+├── gateway/
+│   └── nginx.conf                      # Nginx API Gateway (Path-based Microservice Routing, WS, Rate Limit)
+├── shared/
+│   └── aurameet_shared/                # ספריית תשתית משותפת (config, database, security, errors, kafka_client)
+├── services/
+│   ├── auth-service/                   # (:8001) JWT Auth, Profiles & Avatar Uploads + pytest
+│   ├── persona-service/                # (:8002) Personas, ChromaDB RAG & Long-Term Memory + pytest
+│   ├── meeting-service/                # (:8003) Live Sessions, WebSocket, HITL & WebRTC Avatars + pytest
+│   ├── ai-service/                     # (:8004) Multi-LLM (Gemini/OpenAI/Demo), STT, Summary & Guardrails + pytest
+│   └── analytics-service/              # (:8005) Calendar Schedule, Summary Templates, Stats & Kafka Monitor + pytest
+├── frontend/                           # (:3000) Next.js 15 RTL Hebrew UI
+└── docs/                               # מסמכי אפיון ותכנון (PRD, SPEC, PLAN, STATE)
 ```
+
+</div>

@@ -1,4 +1,4 @@
-name: CI — Autonomous Meeting Bot
+name: CI — AuraMeet AI Microservices
 
 on:
   push:
@@ -7,17 +7,27 @@ on:
     branches: [main, master]
 
 jobs:
-  backend-tests:
+  microservice-tests:
+    name: Test ${{ matrix.service }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - auth-service
+          - persona-service
+          - meeting-service
+          - ai-service
+          - analytics-service
     defaults:
       run:
-        working-directory: backend
+        working-directory: services/${{ matrix.service }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install backend dependencies
+      - name: Install dependencies for ${{ matrix.service }}
         run: pip install -r requirements.txt
       - name: Run pytest suite
         env:
@@ -27,6 +37,7 @@ jobs:
         run: pytest -v
 
   frontend-build:
+    name: Frontend TypeScript & Next.js Build
     runs-on: ubuntu-latest
     defaults:
       run:

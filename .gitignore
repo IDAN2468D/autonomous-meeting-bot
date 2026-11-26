@@ -1,11 +1,11 @@
 # Environment & Secrets (NEVER commit real keys)
 .env
 .env.*
-backend/.env
-backend/.env.*
+!.env.example
+services/*/.env
+services/*/.env.*
 frontend/.env.local
 frontend/.env.*
-!backend/.env.example
 !frontend/.env.local.example
 *.pem
 *.key
@@ -13,15 +13,17 @@ frontend/.env.*
 secrets/
 
 # Local Data & Uploads
-backend/uploads/
-backend/chroma_data/
-backend/venv/
-backend/.venv/
+uploads/
+chroma_data/
+services/*/uploads/
+services/*/chroma_data/
+venv/
+.venv/
 
 # Python & Testing
 **/__pycache__/
 *.pyc
-.pytest_cache/
+**/.pytest_cache/
 .coverage
 
 # Frontend Build & Dependencies
