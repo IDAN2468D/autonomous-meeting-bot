@@ -90,12 +90,19 @@ class ServiceClients:
         template_name: str | None = None,
         template_instructions: str | None = None,
     ) -> dict[str, Any]:
+        safe_transcript = [
+            {
+                "speaker": str(t.get("speaker", "")),
+                "text": str(t.get("text", "")),
+            }
+            for t in transcript
+        ]
         async with httpx.AsyncClient(timeout=45.0) as client:
             resp = await client.post(
                 f"{_normalize_url(settings.AI_SERVICE_URL)}/api/v1/ai/summarize",
                 json={
                     "title": title,
-                    "transcript": transcript,
+                    "transcript": safe_transcript,
                     "template_name": template_name,
                     "template_instructions": template_instructions,
                 },
