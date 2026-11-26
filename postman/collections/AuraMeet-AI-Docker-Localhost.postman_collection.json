@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "AuraMeet AI — Docker Localhost",
-    "description": "Self-contained Postman Collection for AuraMeet AI running locally via Docker Compose (http://localhost:8088). All variables are stored as Collection Variables — no Environment required.",
+    "name": "AuraMeet AI — Docker Localhost (בעברית)",
+    "description": "אוסף Postman מלא בעברית עבור AuraMeet AI בסביבת Docker מקומית (http://localhost:8088). כל המשתנים שמורים ישירות כ-Collection Variables — ללא צורך ב-Environment.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -16,10 +16,10 @@
   },
   "item": [
     {
-      "name": "01. Gateway & Health",
+      "name": "01. שער API ובדיקת תקינות (Gateway & Health)",
       "item": [
         {
-          "name": "Gateway Health Check",
+          "name": "בדיקת תקינות שער API (Gateway Health)",
           "request": {
             "auth": {
               "type": "noauth"
@@ -44,10 +44,10 @@
       ]
     },
     {
-      "name": "02. Auth Service (:8001)",
+      "name": "02. שירות אימות ופרופיל — Auth Service (:8001)",
       "item": [
         {
-          "name": "Register User",
+          "name": "הרשמת משתמש חדש (Register)",
           "request": {
             "auth": {
               "type": "noauth"
@@ -81,7 +81,7 @@
           ]
         },
         {
-          "name": "Login User (auto-saves jwt_token)",
+          "name": "התחברות משתמש (שומר jwt_token אוטומטית)",
           "request": {
             "auth": {
               "type": "noauth"
@@ -114,7 +114,7 @@
           ]
         },
         {
-          "name": "Get Current User (/me)",
+          "name": "קבלת פרטי משתמש מחובר (/me)",
           "request": {
             "method": "GET",
             "header": [],
@@ -122,7 +122,7 @@
           }
         },
         {
-          "name": "Update Profile (/me)",
+          "name": "עדכון פרופיל משתמש (/me)",
           "request": {
             "method": "PATCH",
             "header": [
@@ -139,7 +139,7 @@
           }
         },
         {
-          "name": "Upload User Avatar",
+          "name": "העלאת תמונת אווטאר למשתמש",
           "request": {
             "method": "POST",
             "header": [],
@@ -159,10 +159,10 @@
       ]
     },
     {
-      "name": "03. Persona & RAG Service (:8002)",
+      "name": "03. שירות פרסונות וידע — Persona & RAG Service (:8002)",
       "item": [
         {
-          "name": "List Personas (auto-saves persona_id)",
+          "name": "רשימת פרסונות (שומר persona_id אוטומטית)",
           "request": {
             "method": "GET",
             "header": [],
@@ -185,7 +185,7 @@
           ]
         },
         {
-          "name": "Create Persona",
+          "name": "יצירת פרסונה חדשה",
           "request": {
             "method": "POST",
             "header": [
@@ -215,7 +215,7 @@
           ]
         },
         {
-          "name": "Get Persona by ID",
+          "name": "קבלת פרסונה לפי מזהה",
           "request": {
             "method": "GET",
             "header": [],
@@ -223,7 +223,7 @@
           }
         },
         {
-          "name": "Upload Knowledge Document (RAG)",
+          "name": "העלאת מסמך לבסיס הידע (RAG)",
           "request": {
             "method": "POST",
             "header": [],
@@ -241,7 +241,7 @@
           }
         },
         {
-          "name": "Get Persona Long-Term Memories",
+          "name": "שליפת זיכרונות ארוכי-טווח של פרסונה",
           "request": {
             "method": "GET",
             "header": [],
@@ -249,7 +249,7 @@
           }
         },
         {
-          "name": "Retrieve RAG + Memory Context",
+          "name": "שליפת הקשר משולב (RAG + זיכרון)",
           "request": {
             "method": "GET",
             "header": [],
@@ -275,7 +275,7 @@
           }
         },
         {
-          "name": "Delete Persona",
+          "name": "מחיקת פרסונה",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -285,10 +285,10 @@
       ]
     },
     {
-      "name": "04. Meeting Sessions Service (:8003)",
+      "name": "04. שירות חדרי פגישה — Meeting Service (:8003)",
       "item": [
         {
-          "name": "List Meeting Sessions",
+          "name": "רשימת פגישות (שומר session_id אוטומטית)",
           "request": {
             "method": "GET",
             "header": [],
@@ -311,7 +311,7 @@
           ]
         },
         {
-          "name": "Create Meeting Session",
+          "name": "פתיחת חדר פגישה חדש",
           "request": {
             "method": "POST",
             "header": [
@@ -341,7 +341,7 @@
           ]
         },
         {
-          "name": "Get Session by ID",
+          "name": "קבלת פרטי פגישה לפי מזהה",
           "request": {
             "method": "GET",
             "header": [],
@@ -349,7 +349,7 @@
           }
         },
         {
-          "name": "End Meeting Session & Generate Summary",
+          "name": "סיום פגישה ויצירת סיכום אוטומטי",
           "request": {
             "method": "POST",
             "header": [],
@@ -359,10 +359,10 @@
       ]
     },
     {
-      "name": "05. AI & Guardrails Service (:8004)",
+      "name": "05. שירות בינה מלאכותית והגנות — AI & Guardrails (:8004)",
       "item": [
         {
-          "name": "Generate Opening Greeting",
+          "name": "יצירת ברכת פתיחה אוטונומית",
           "request": {
             "method": "POST",
             "header": [
@@ -379,7 +379,7 @@
           }
         },
         {
-          "name": "Generate LLM Meeting Reply",
+          "name": "יצירת תשובת LLM בזמן פגישה",
           "request": {
             "method": "POST",
             "header": [
@@ -396,7 +396,7 @@
           }
         },
         {
-          "name": "Summarize Meeting Transcript",
+          "name": "סיכום תמליל פגישה",
           "request": {
             "method": "POST",
             "header": [
@@ -413,7 +413,7 @@
           }
         },
         {
-          "name": "Guardrails Check Input (Injection Test)",
+          "name": "בדיקת הגנות קלט — זיהוי Prompt Injection",
           "request": {
             "method": "POST",
             "header": [
@@ -430,7 +430,7 @@
           }
         },
         {
-          "name": "Guardrails Sanitize Output",
+          "name": "ניקוי פלט באמצעות Guardrails",
           "request": {
             "method": "POST",
             "header": [
@@ -449,10 +449,10 @@
       ]
     },
     {
-      "name": "06. Analytics, Schedule, Templates & Kafka (:8005)",
+      "name": "06. אנליטיקס, לוח שנה, תבניות ו-Kafka (:8005)",
       "item": [
         {
-          "name": "Dashboard Stats",
+          "name": "סטטיסטיקות לוח בקרה (Dashboard Stats)",
           "request": {
             "method": "GET",
             "header": [],
@@ -460,7 +460,7 @@
           }
         },
         {
-          "name": "List Summary Templates",
+          "name": "רשימת תבניות סיכום",
           "request": {
             "method": "GET",
             "header": [],
@@ -468,7 +468,7 @@
           }
         },
         {
-          "name": "Create Custom Template",
+          "name": "יצירת תבנית סיכום מותאמת אישית",
           "request": {
             "method": "POST",
             "header": [
@@ -496,7 +496,7 @@
           ]
         },
         {
-          "name": "Delete Custom Template",
+          "name": "מחיקת תבנית סיכום מותאמת אישית",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -504,7 +504,7 @@
           }
         },
         {
-          "name": "List Scheduled Meetings",
+          "name": "רשימת פגישות מתוזמנות בלוח השנה",
           "request": {
             "method": "GET",
             "header": [],
@@ -512,7 +512,7 @@
           }
         },
         {
-          "name": "Schedule New Meeting",
+          "name": "תזמון פגישה חדשה",
           "request": {
             "method": "POST",
             "header": [
@@ -540,7 +540,7 @@
           ]
         },
         {
-          "name": "Delete Scheduled Meeting",
+          "name": "ביטול/מחיקת פגישה מתוזמנת",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -548,7 +548,7 @@
           }
         },
         {
-          "name": "Kafka Status",
+          "name": "סטטוס חיבור וטופיקים ב-Kafka",
           "request": {
             "method": "GET",
             "header": [],
@@ -556,7 +556,7 @@
           }
         },
         {
-          "name": "Kafka Recent Events",
+          "name": "אירועים אחרונים מ-Kafka",
           "request": {
             "method": "GET",
             "header": [],
