@@ -1,3 +1,4 @@
+import os
 from typing import Any
 import httpx
 from aurameet_shared.config import settings
@@ -8,6 +9,8 @@ def _normalize_url(url: str) -> str:
     if not cleaned.startswith(("http://", "https://")):
         if cleaned.endswith(".onrender.com"):
             return f"https://{cleaned}"
+        if os.getenv("RENDER") and "." not in cleaned and ":" not in cleaned:
+            return f"https://{cleaned}.onrender.com"
         return f"http://{cleaned}"
     return cleaned
 

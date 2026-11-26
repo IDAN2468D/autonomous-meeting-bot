@@ -1,0 +1,7 @@
+#!/bin/sh
+for var in AUTH_HOST PERSONA_HOST MEETING_HOST AI_HOST ANALYTICS_HOST FRONTEND_HOST; do
+  eval val="\$$var"
+  if [ -n "$val" ] && ! echo "$val" | grep -q '\.'; then
+    export "$var=${val}.onrender.com"
+  fi
+done
