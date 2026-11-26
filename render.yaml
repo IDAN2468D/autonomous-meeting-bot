@@ -25,12 +25,13 @@ envVarGroups:
         sync: false
 
 services:
-  - type: pserv
+  - type: web
     name: aurameet-auth-service
     runtime: docker
     dockerfilePath: ./services/auth-service/Dockerfile
     dockerContext: .
-    plan: starter
+    plan: free
+    healthCheckPath: /health
     envVars:
       - fromGroup: aurameet-shared-env
       - key: SERVICE_NAME
@@ -40,12 +41,13 @@ services:
       - key: UPLOADS_DIR
         value: /tmp/uploads
 
-  - type: pserv
+  - type: web
     name: aurameet-persona-service
     runtime: docker
     dockerfilePath: ./services/persona-service/Dockerfile
     dockerContext: .
-    plan: starter
+    plan: free
+    healthCheckPath: /health
     envVars:
       - fromGroup: aurameet-shared-env
       - key: SERVICE_NAME
@@ -57,12 +59,13 @@ services:
       - key: UPLOADS_DIR
         value: /tmp/uploads
 
-  - type: pserv
+  - type: web
     name: aurameet-ai-service
     runtime: docker
     dockerfilePath: ./services/ai-service/Dockerfile
     dockerContext: .
-    plan: starter
+    plan: free
+    healthCheckPath: /health
     envVars:
       - fromGroup: aurameet-shared-env
       - key: SERVICE_NAME
@@ -80,12 +83,13 @@ services:
       - key: OPENAI_MODEL
         value: gpt-4o-mini
 
-  - type: pserv
+  - type: web
     name: aurameet-analytics-service
     runtime: docker
     dockerfilePath: ./services/analytics-service/Dockerfile
     dockerContext: .
-    plan: starter
+    plan: free
+    healthCheckPath: /health
     envVars:
       - fromGroup: aurameet-shared-env
       - key: SERVICE_NAME
@@ -93,12 +97,13 @@ services:
       - key: PORT
         value: "8005"
 
-  - type: pserv
+  - type: web
     name: aurameet-meeting-service
     runtime: docker
     dockerfilePath: ./services/meeting-service/Dockerfile
     dockerContext: .
-    plan: starter
+    plan: free
+    healthCheckPath: /health
     envVars:
       - fromGroup: aurameet-shared-env
       - key: SERVICE_NAME
@@ -117,26 +122,26 @@ services:
         value: "false"
       - key: AI_SERVICE_URL
         fromService:
-          type: pserv
+          type: web
           name: aurameet-ai-service
-          property: hostport
+          property: host
       - key: PERSONA_SERVICE_URL
         fromService:
-          type: pserv
+          type: web
           name: aurameet-persona-service
-          property: hostport
+          property: host
       - key: ANALYTICS_SERVICE_URL
         fromService:
-          type: pserv
+          type: web
           name: aurameet-analytics-service
-          property: hostport
+          property: host
 
-  - type: pserv
+  - type: web
     name: aurameet-frontend
     runtime: docker
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
-    plan: starter
+    plan: free
     envVars:
       - key: PORT
         value: "3000"
@@ -150,38 +155,38 @@ services:
     runtime: docker
     dockerfilePath: ./gateway/Dockerfile.render
     dockerContext: .
-    plan: starter
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: PORT
         value: "8088"
-      - key: AUTH_HOSTPORT
+      - key: AUTH_HOST
         fromService:
-          type: pserv
+          type: web
           name: aurameet-auth-service
-          property: hostport
-      - key: PERSONA_HOSTPORT
+          property: host
+      - key: PERSONA_HOST
         fromService:
-          type: pserv
+          type: web
           name: aurameet-persona-service
-          property: hostport
-      - key: MEETING_HOSTPORT
+          property: host
+      - key: MEETING_HOST
         fromService:
-          type: pserv
+          type: web
           name: aurameet-meeting-service
-          property: hostport
-      - key: AI_HOSTPORT
+          property: host
+      - key: AI_HOST
         fromService:
-          type: pserv
+          type: web
           name: aurameet-ai-service
-          property: hostport
-      - key: ANALYTICS_HOSTPORT
+          property: host
+      - key: ANALYTICS_HOST
         fromService:
-          type: pserv
+          type: web
           name: aurameet-analytics-service
-          property: hostport
-      - key: FRONTEND_HOSTPORT
+          property: host
+      - key: FRONTEND_HOST
         fromService:
-          type: pserv
+          type: web
           name: aurameet-frontend
-          property: hostport
+          property: host
